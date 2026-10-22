@@ -1,0 +1,102 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String           @id @default(cuid())
+  email           String           @unique
+  name            String
+  passwordHash    String
+  role            String           // "CUSTOMER" | "ADMIN"
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  orders          Order[]
+  wallBookings    WallBooking[]
+  potteryRequests PotteryRequest[]
+}
+
+model Painting {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  price       Float
+  dimensions  String
+  medium      String
+  imageUrl    String
+  status      String   @default("AVAILABLE") // "AVAILABLE" | "SOLD"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  orders      Order[]
+}
+
+model Order {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  paintingId String
+  painting   Painting @relation(fields: [paintingId], references: [id], onDelete: Cascade)
+  amount     Float
+  status     String   @default("PLACED") // "PLACED" | "CANCELLED"
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model WallRate {
+  id          String   @id @default(cuid())
+  ratePerSqFt Float    @default(18.0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model WallBooking {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookingDate  String   // Normalized YYYY-MM-DD
+  wallSizeSqFt Float
+  ratePerSqFt  Float
+  totalPrice   Float
+  address      String
+  notes        String?
+  status       String   @default("REQUESTED") // "REQUESTED" | "CONFIRMED" | "DECLINED" | "CANCELLED"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([bookingDate])
+}
+
+model PotterySeedItem {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String
+  basePrice   Float
+  createdAt   DateTime @default(now())
+}
+
+model PotterySeedGlaze {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  hexColor    String
+  finish      String
+  createdAt   DateTime @default(now())
+}
+
+model PotteryRequest {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item         String
+  glaze        String
+  quantity     Int
+  neededByDate String   // Normalized YYYY-MM-DD
+  notes        String?
+  status       String   @default("REQUESTED") // "REQUESTED" | "ACCEPTED" | "DECLINED" | "CANCELLED"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
